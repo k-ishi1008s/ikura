@@ -1,5 +1,5 @@
-# Vue 3 + Vite
-
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
-
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+# ikura イクラ
+これはikuraです。割り勘を手軽にします。
+広告は０
+その代わり、1回100円のルーレットを用意しました。
+次何を食べるか、次どこにいくか、次の旅行の行き先...　一回100円でいくらがスロットで決定します
