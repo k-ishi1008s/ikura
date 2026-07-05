@@ -185,6 +185,23 @@ onMounted(loadAll)
 // ルート表示/個人表示のトグル
 const showPersonal = ref(false)
 
+// ＝＝＝＝ チップ（支援）機能 ＝＝＝＝
+// 仕様: グループ合計200円を「1人あたり◯円」に見せる。決済は幹事が1回200円（Stripe Payment Link）
+// URL未設定（審査前など）のときは行ごと非表示になる
+const TIP_TOTAL = 200
+const tipUrl = import.meta.env.VITE_STRIPE_TIP_URL ?? ''
+const TIP_THANKS_KEY = 'ikura_tip_thanks'
+const tipped = ref(!!localStorage.getItem(TIP_THANKS_KEY))
+const tipPerPerson = computed(() =>
+  headcount.value > 0 ? Math.ceil(TIP_TOTAL / headcount.value) : TIP_TOTAL
+)
+function openTip() {
+  window.open(tipUrl, '_blank', 'noopener')
+  // 決済完了はwebhookなしでは検知できないため、タップ時点でお礼表示に切り替える（ROADMAP方針）
+  try { localStorage.setItem(TIP_THANKS_KEY, '1') } catch {}
+  tipped.value = true
+}
+
 // 個人ごとの負担額（受益者シェア合計）
 const personalSpends = computed(() => {
   const map = new Map()
@@ -315,8 +332,21 @@ const personalSpends = computed(() => {
             <span class="amount per">{{ fmtJPY(perPersonAmount) }}</span>
           </div>
         </div>
+
+        <!-- チップ（支援）行: 精算結果一覧の最下段 -->
+        <div v-if="tipUrl && totalAmount > 0" class="tip-row">
+          <template v-if="!tipped">
+            <button class="tip-btn" @click="openTip">
+              ＋1人{{ tipPerPerson }}円で ikura を支援
+              <span class="tip-note">（グループで{{ TIP_TOTAL }}円）</span>
+            </button>
+          </template>
+          <template v-else>
+            <div class="tip-thanks">応援ありがとうございます！ 🍣</div>
+          </template>
+        </div>
       </div>
-      
+
     </div>
 
     <div class="card card--frameless">

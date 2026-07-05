@@ -516,3 +516,26 @@ button.ghost-black { background:#e5e5e5; color:#525252; border:0px solid #323232
 .legal dl { margin: 8px 0 0; }
 .legal dt { font-weight: 700; font-size: 13px; margin-top: 14px; }
 .legal dd { margin: 2px 0 0; }
+
+/* ===== チップ（支援）行 ===== */
+.tip-row { margin-top: 10px; }
+.tip-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px dashed #e96e14;
+  border-radius: 10px;
+  background: #fff7f0;
+  color: #e96e14;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tip-btn:hover { background: #ffefe2; }
+.tip-note { font-weight: 400; font-size: 11px; color: #c9772f; }
+.tip-thanks {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e96e14;
+  padding: 8px 0;
+}
