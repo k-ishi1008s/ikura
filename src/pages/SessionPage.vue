@@ -2,6 +2,7 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createClient } from '@supabase/supabase-js'
+import { saveHistoryEntry } from '../api/history'
 
 const route = useRoute(); const router = useRouter()
 const sessionId = route.params.id; const token = route.params.token
@@ -53,6 +54,19 @@ async function loadAll() {
     const da = new Date(a?.created_at ?? 0).getTime()
     const db = new Date(b?.created_at ?? 0).getTime()
     return db - da
+  })
+
+  // このブラウザの履歴に保存（トップページの「開いたグループ」一覧用）
+  const total = expenses.value.reduce((sum, x) => sum + (x?.amount_jpy ?? 0), 0)
+  const headcount = members.value.length || 1
+  saveHistoryEntry({
+    id: s.id,
+    token,
+    title: s.title,
+    created_at: s.created_at,
+    members: members.value.map(m => m.name),
+    total,
+    per: Math.floor(total / headcount)
   })
 }
 

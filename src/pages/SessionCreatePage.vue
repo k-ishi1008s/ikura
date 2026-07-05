@@ -1,7 +1,8 @@
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '../api/supabase'
+import { createClient } from '@supabase/supabase-js'
+import { loadHistory, saveHistoryEntry, removeHistoryEntry } from '../api/history'
 
 const router = useRouter()
 
@@ -64,11 +65,21 @@ async function createSession() {
   loading.value = true
   const token = genToken()
 
+  // RLS: 作成直後の SELECT / members INSERT には x-session-token ヘッダが必要
+  const db = createClient(
+    import.meta.env.VITE_SUPABASE_URL,
+    import.meta.env.VITE_SUPABASE_ANON_KEY,
+    {
+      global: { headers: { 'x-session-token': token } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
+  )
+
   // 1) sessions
-  const { data: sess, error: e1 } = await supabase
+  const { data: sess, error: e1 } = await db
     .from('sessions')
     .insert([{ title: title.value, token }])
-    .select('id')
+    .select('id, created_at')
     .single()
   if (e1 || !sess) {
     loading.value = false
@@ -77,11 +88,22 @@ async function createSession() {
 
   // 2) members
   const rows = names.value.map(n => ({ session_id: sess.id, name: n, active: true }))
-  const { error: e2 } = await supabase.from('members').insert(rows)
+  const { error: e2 } = await db.from('members').insert(rows)
   if (e2) {
     loading.value = false
     return alert(e2.message)
   }
+
+  // 履歴に保存（このブラウザで開いたグループ一覧）
+  saveHistoryEntry({
+    id: sess.id,
+    token,
+    title: title.value,
+    created_at: sess.created_at,
+    members: [...names.value],
+    total: 0,
+    per: 0
+  })
 
   loading.value = false
 
@@ -103,10 +125,9 @@ async function createSession() {
 }
 
 //　履歴機能の実装
-// ＝＝＝＝ 過去イベント検索（苗字） ＝＝＝＝
-const querySurname = ref('');
+// ＝＝＝＝ このブラウザで開いたグループ一覧（localStorage） ＝＝＝＝
+// RLS導入により苗字での全体検索は廃止（他人のデータが見える設計だったため）
 const pastEvents = ref([]);      // 表示用カード配列
-const searching = ref(false);
 
 const fmtJPY = (n) =>
   Number(n || 0).toLocaleString('ja-JP', {
@@ -116,55 +137,9 @@ const fmtJPY = (n) =>
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('ja-JP', { year:'numeric', month:'short', day:'numeric' }) : '';
 
-async function searchBySurname() {
-  const key = querySurname.value.trim();
-  if (!key) { pastEvents.value = []; return; }
-
-  searching.value = true;
-
-  // 1) 苗字で members を引いて、そのセッション群を得る
-  const { data: hits, error } = await supabase
-    .from('members')
-    .select('session_id, name, sessions!inner(id, title, token, created_at)')
-    .ilike('name', `${key}%`);          // 先頭一致（苗字から始まる）
-  if (error) { alert(error.message); searching.value = false; return; }
-  if (!hits || hits.length === 0) { pastEvents.value = []; searching.value = false; return; }
-
-  // 2) セッションをユニーク化
-  const seen = new Set();
-  const sessions = [];
-  for (const h of hits) {
-    const s = h.sessions;
-    if (s && !seen.has(s.id)) { seen.add(s.id); sessions.push(s); }
-  }
-
-  // 3) 各セッションで members / expenses を取得し、合計と/1人を計算
-  const cards = await Promise.all(sessions.map(async (s) => {
-    const [{ data: ms }, { data: exps }] = await Promise.all([
-      supabase.from('members')
-        .select('name, active').eq('session_id', s.id).eq('active', true).order('id'),
-      supabase.from('expenses')
-        .select('amount_jpy').eq('session_id', s.id)
-    ]);
-    const namesList = (ms ?? []).map(m => m.name);
-    const total = (exps ?? []).reduce((sum, e) => sum + (e?.amount_jpy ?? 0), 0);
-    const headcount = (ms ?? []).length || 1;
-    const per = Math.floor(total / headcount);
-
-    return {
-      id: s.id,
-      token: s.token,
-      title: s.title,
-      created_at: s.created_at,
-      members: namesList,
-      total,
-      per
-    };
-  }));
-
-  pastEvents.value = cards.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-  searching.value = false;
-}
+onMounted(() => {
+  pastEvents.value = loadHistory();
+});
 
 function openSessionCard(ev) {
   // そのイベントへ移動
@@ -175,6 +150,12 @@ function reuseMembers(ev) {
   // 同じメンバーを上に復元（タイトルは絶対に上書きしない）
   names.value = [...ev.members];
   focusInput();   // 入力欄にフォーカス戻す
+}
+
+function removeCard(ev) {
+  if (!confirm('この履歴を削除しますか？（グループ自体は消えません）')) return;
+  removeHistoryEntry(ev.id);
+  pastEvents.value = loadHistory();
 }
 
 </script>
@@ -216,32 +197,25 @@ function reuseMembers(ev) {
     </div>
   </main>
 
-  <!-- ＝＝＝＝ 過去イベント検索（苗字） ＝＝＝＝ -->
+  <!-- ＝＝＝＝ このブラウザで開いたグループ一覧 ＝＝＝＝ -->
   <div class="container">
     <div class="card card--frameless" style="margin-top:8px;">
-      <div class="row" style="gap:8px; align-items:center; ">
-        <input
-          v-model="querySurname"
-          class="input"
-          placeholder="苗字"
-          @keyup.enter.prevent="searchBySurname"
-          style="flex:1; border-radius: 10px; padding:10px 12px; height:40px;"
-        />
-        <button class="ghost-black" @click="searchBySurname" :disabled="searching"
-                style="font-size: 13px; border-radius: 10px; height:40px; padding:0 14px; white-space:nowrap;">
-          {{ searching ? '検索中…' : '履歴表示' }}
-        </button>
+      <div v-if="pastEvents.length" class="small" style="font-weight:600;">
+        このブラウザで開いたグループ
       </div>
 
       <!-- 結果リスト -->
       <div v-if="pastEvents.length" style="margin-top:10px; display:flex; flex-direction:column; gap:12px;">
         <div v-for="ev in pastEvents" :key="ev.id" class="card">
           <div class="section">
-            <div class="small">作成日: {{ fmtDate(ev.created_at) }}</div>
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+              <div class="small">作成日: {{ fmtDate(ev.created_at) }}</div>
+              <button class="ghost" style="padding:2px 8px; font-size:13px;" @click="removeCard(ev)">×</button>
+            </div>
             <h3 style="margin:0; white-space:normal; overflow-wrap:break-word;">
               {{ ev.title || 'セッション' }}
             </h3>
-            <div class="small">{{ ev.members.join('・') }}</div>
+            <div class="small">{{ (ev.members ?? []).join('・') }}</div>
           </div>
 
           <!-- 合計 / 1人（SessionPageと同じ見た目ルール） -->
@@ -262,8 +236,8 @@ function reuseMembers(ev) {
         </div>
       </div>
 
-      <div v-else-if="querySurname && !searching" class="small" style="margin-top:8px;">
-        該当イベントはありません
+      <div v-else class="small" style="margin-top:8px;">
+        まだ履歴はありません。グループを作成するか、共有されたリンクを開くとここに表示されます。
       </div>
     </div>
    </div>
