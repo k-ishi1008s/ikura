@@ -67,7 +67,11 @@
 - [x] スキーマ設計: `sessions` に `is_premium boolean default false` を追加(テーブル名は既存コードに合わせ groups ではなく sessions)。無料グループの90日削除は `created_at` 基準(削除は pg_cron か Edge Function の定期実行 — **未実装、Phase 2 のプレミアム実装時に入れる**)
 - [x] **全テーブルに RLS ポリシー設定**。方式: URL の token を `x-session-token` ヘッダで送り、一致する session の行だけ読み書き可。curl で10項目検証済み(ヘッダ無し/誤token では SELECT 空・INSERT/DELETE 拒否)
   - これに伴い**苗字での全体検索は廃止**(anon で他人のイベントが見える設計だったため)。履歴は localStorage 方式(このブラウザで開いたグループ一覧)に置換済み。端末を跨ぐ履歴は将来プレミアムの訴求ポイント候補
-- [ ] Cloudflare Pages にデプロイ(ビルド: `npm run build`、出力: `dist`)。`vercel.json` の SPA リライト設定を Cloudflare 用(`_redirects`: `/* /index.html 200`)に置き換え
+- [x] Cloudflare にデプロイ完了: https://ikura.illbuy12.workers.dev (2026-07-05)
+  - 実際は Pages ではなく **Workers 静的アセット方式**(現行 Cloudflare の推奨。無料・商用OK は同じ)。SPA リライトは `_redirects` ではなく `wrangler.jsonc` の `not_found_handling: "single-page-application"` で実現
+  - main への push で本番、他ブランチ push でプレビューデプロイ
+  - ビルド環境変数(VITE_SUPABASE_*)は プロジェクト Settings → Build → Variables and secrets に設定済み
+  - 公開(Phase 2)まで noindex 維持: `index.html` の meta robots + `public/_headers` の X-Robots-Tag。**公開時に両方外すこと**
 - [ ] 独自ドメイン取得(候補の空き確認から。Cloudflare Registrar が原価で安い)
 - [x] GitHub リポジトリを `git_test` から `ikura` に改名(2026-07-05。remote 付け替え済み)
 - [x] アプリ内の名称・タイトル・OGP を「ikura」にブランディング(noindex は公開まで維持、Phase 2 で外す)
