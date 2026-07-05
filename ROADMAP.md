@@ -69,8 +69,8 @@
   - これに伴い**苗字での全体検索は廃止**(anon で他人のイベントが見える設計だったため)。履歴は localStorage 方式(このブラウザで開いたグループ一覧)に置換済み。端末を跨ぐ履歴は将来プレミアムの訴求ポイント候補
 - [ ] Cloudflare Pages にデプロイ(ビルド: `npm run build`、出力: `dist`)。`vercel.json` の SPA リライト設定を Cloudflare 用(`_redirects`: `/* /index.html 200`)に置き換え
 - [ ] 独自ドメイン取得(候補の空き確認から。Cloudflare Registrar が原価で安い)
-- [ ] GitHub リポジトリを `git_test` から `ikura` に改名 or 新リポジトリへ remote 付け替え
-- [ ] アプリ内の名称・タイトル・OGP を「ikura」にブランディング
+- [x] GitHub リポジトリを `git_test` から `ikura` に改名(2026-07-05。remote 付け替え済み)
+- [x] アプリ内の名称・タイトル・OGP を「ikura」にブランディング(noindex は公開まで維持、Phase 2 で外す)
 
 ### Phase 1: お金の受け皿(3〜4週目)
 - [ ] Stripe アカウント開設(個人。審査に数日 → **最初に着手**)
