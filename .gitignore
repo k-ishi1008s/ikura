@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 frontend_git_backup_*
+
+# wrangler
+.wrangler
