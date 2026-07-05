@@ -11,4 +11,9 @@
     </div>
   </header>
   <router-view />
+  <footer class="site-footer">
+    <router-link to="/legal/terms">利用規約</router-link>
+    <router-link to="/legal/privacy">プライバシーポリシー</router-link>
+    <router-link to="/legal/tokushoho">特定商取引法に基づく表記</router-link>
+  </footer>
 </template>

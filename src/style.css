@@ -492,3 +492,27 @@ button.ghost-black { background:#e5e5e5; color:#525252; border:0px solid #323232
   color: var(--primary);
   text-decoration: underline;
 }
+/* ===== 法定ページ・フッター ===== */
+.site-footer {
+  max-width: 560px;
+  margin: 24px auto 0;
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.site-footer a {
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: none;
+}
+.site-footer a:hover { text-decoration: underline; }
+
+.legal h2 { margin: 0 0 4px; font-size: 18px; }
+.legal h3 { margin: 18px 0 6px; font-size: 14px; }
+.legal p, .legal li, .legal dd { font-size: 13px; line-height: 1.8; color: var(--fg, #333); }
+.legal ul { padding-left: 18px; margin: 6px 0; }
+.legal dl { margin: 8px 0 0; }
+.legal dt { font-weight: 700; font-size: 13px; margin-top: 14px; }
+.legal dd { margin: 2px 0 0; }

@@ -94,6 +94,7 @@ async function addExpense() {
   if (error) return alert(error.message)
   amount.value = null
   memo.value = ''
+  await loadAll()   // RLS環境ではRealtime通知が届かないため、登録後に自前で再読込する
 }
 
 function computeBalances(expenses) {
@@ -176,13 +177,10 @@ function copyLink(){
   navigator.clipboard.writeText(msg).then(()=>alert('コピー完了！すぐにLINEで共有！！')) 
 }
 
-onMounted(async () => {
-  await loadAll()
-  db.channel(`session-${sessionId}`)
-    .on('postgres_changes',{event:'*',schema:'public',table:'expenses',filter:`session_id=eq.${sessionId}`},()=>loadAll())
-    .on('postgres_changes',{event:'*',schema:'public',table:'members',filter:`session_id=eq.${sessionId}`},()=>loadAll())
-    .subscribe()
-})
+// 旧実装は Supabase Realtime で他端末の変更も反映していたが、
+// RLS(x-session-token ヘッダ方式)では WebSocket にヘッダが乗らず通知が許可されないため廃止。
+// 自分の操作は addExpense 内の loadAll() で即時反映される。
+onMounted(loadAll)
 
 // ルート表示/個人表示のトグル
 const showPersonal = ref(false)
