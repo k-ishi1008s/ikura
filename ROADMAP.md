@@ -85,7 +85,8 @@
   - タップ → `VITE_STRIPE_TIP_URL`(Stripe Payment Link)を新規タブで開く。**URL未設定なら行ごと非表示**(審査完了までの安全弁)
   - タップ後は localStorage フラグでお礼表示に切替
   - [ ] 残: Stripe 審査通過後、本番 Payment Link(200円、Apple Pay/Google Pay 有効)を作成し、Cloudflare の Build 環境変数に `VITE_STRIPE_TIP_URL` を設定して再デプロイ
-- [ ] Cloudflare Web Analytics 導入。計測イベント: グループ作成数 / 精算完了数 / チップ行の表示→タップ率
+- [x] Cloudflare Web Analytics 導入(2026-07-05。beacon を index.html に設置)
+  - CF Web Analytics はページビューのみでカスタムイベント不可。計測の分担: 訪問・遷移=CF / グループ作成数・支出登録数=Supabase の行数 / チップ決済数=Stripe。タップ率が厳密に必要になったら Plausible 等を検討
 
 ### Phase 2: プレミアムグループと一般公開(2ヶ月目)
 - [ ] プレミアムグループ実装(上記 A の仕様どおり: Payment Link + `client_reference_id` + Edge Function webhook)
